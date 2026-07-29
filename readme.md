@@ -17,9 +17,9 @@ The goal of this project is to:
 
 ## Team Members
 
-- Member 1
-- Member 2
-- Member 3
+- Janhavi Hivarekar
+- Pranjal Gosavi
+- Sagar Raut
 
 ## Tech Stack
 
