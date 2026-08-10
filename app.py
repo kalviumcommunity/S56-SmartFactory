@@ -1,256 +1,328 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from pathlib import Path
 
 
-# ==================================================
-# PAGE CONFIGURATION
-# ==================================================
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(
     page_title="SmartFactory",
     page_icon="🏭",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 
-# ==================================================
-# TEMPORARY DATA
-# Will be replaced with Supabase data later.
-# Field names follow the finalized database schema.
-# ==================================================
+# ============================================================
+# CUSTOM STYLING
+# ============================================================
 
-machines = pd.DataFrame({
-    "machine_id": [
-        "CNC-01",
-        "CNC-02",
-        "WLD-01",
-        "ASM-03",
-        "INJ-02",
-        "PRS-01",
-        "CVY-04",
-        "PKG-02"
-    ],
-    "machine_name": [
-        "CNC Milling Machine",
-        "CNC Lathe Unit",
-        "Welding Station 1",
-        "Assembly Robot 3",
-        "Injection Molder 2",
-        "Hydraulic Press 1",
-        "Conveyor Belt 4",
-        "Packaging Unit 2"
-    ],
-    "machine_type": [
-        "CNC",
-        "CNC",
-        "Welding",
-        "Assembly",
-        "Injection",
-        "Press",
-        "Conveyor",
-        "Packaging"
-    ]
-})
+st.markdown(
+    """
+    <style>
 
+    /* Main background */
+    .stApp {
+        background-color: #f7f8fa;
+    }
 
-uptime_logs = pd.DataFrame({
-    "machine_id": [
-        "CNC-01", "CNC-01", "CNC-01",
-        "CNC-02", "CNC-02", "CNC-02",
-        "WLD-01", "WLD-01", "WLD-01",
-        "ASM-03", "ASM-03", "ASM-03"
-    ],
+    /* Sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e5e7eb;
+    }
 
-    "log_date": pd.to_datetime([
-        "2026-08-01", "2026-08-05", "2026-08-10",
-        "2026-08-01", "2026-08-05", "2026-08-10",
-        "2026-08-01", "2026-08-05", "2026-08-10",
-        "2026-08-01", "2026-08-05", "2026-08-10"
-    ]),
+    /* Main title */
+    h1 {
+        color: #172033;
+        font-size: 28px;
+        font-weight: 700;
+    }
 
-    "uptime_percentage": [
-        96.2, 97.1, 98.4,
-        95.4, 96.5, 97.1,
-        90.2, 89.5, 88.6,
-        97.8, 98.5, 99.2
-    ],
+    h2, h3 {
+        color: #172033;
+    }
 
-    "downtime_hours": [
-        0.9, 0.7, 0.4,
-        1.1, 0.9, 0.7,
-        2.3, 2.5, 2.7,
-        0.5, 0.4, 0.2
-    ]
-})
+    /* Metric cards */
+    div[data-testid="stMetric"] {
+        background-color: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 18px;
+    }
+
+    div[data-testid="stMetricLabel"] {
+        color: #6b7280;
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: #172033;
+    }
+
+    /* Dataframe */
+    div[data-testid="stDataFrame"] {
+        border-radius: 10px;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
-maintenance_logs = pd.DataFrame({
-    "maintenance_id": [
-        "MNT-0241",
-        "MNT-0240",
-        "MNT-0239",
-        "MNT-0238",
-        "MNT-0237"
-    ],
+# ============================================================
+# DATA PATH
+# ============================================================
 
-    "machine_id": [
-        "CNC-01",
-        "WLD-01",
-        "INJ-02",
-        "PRS-01",
-        "ASM-03"
-    ],
-
-    "maintenance_date": pd.to_datetime([
-        "2026-08-14",
-        "2026-08-12",
-        "2026-08-10",
-        "2026-08-08",
-        "2026-08-06"
-    ]),
-
-    "maintenance_type": [
-        "Preventive",
-        "Corrective",
-        "Preventive",
-        "Inspection",
-        "Corrective"
-    ],
-
-    "status": [
-        "Completed",
-        "Completed",
-        "Scheduled",
-        "Completed",
-        "Pending"
-    ]
-})
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data" / "processed"
 
 
-defect_logs = pd.DataFrame({
-    "defect_id": [
-        "DEF-0512",
-        "DEF-0498",
-        "DEF-0481",
-        "DEF-0463",
-        "DEF-0440",
-        "DEF-0421",
-        "DEF-0405",
-        "DEF-0398"
-    ],
+# ============================================================
+# LOAD CLEANED DATA
+# ============================================================
 
-    "machine_id": [
-        "CNC-01",
-        "CNC-02",
-        "WLD-01",
-        "ASM-03",
-        "INJ-02",
-        "PRS-01",
-        "CVY-04",
-        "PKG-02"
-    ],
+@st.cache_data
+def load_data():
 
-    "log_date": pd.to_datetime([
-        "2026-08-13",
-        "2026-08-12",
-        "2026-08-11",
-        "2026-08-10",
-        "2026-08-09",
-        "2026-08-08",
-        "2026-08-07",
-        "2026-08-06"
-    ]),
-
-    "defect_count": [
-        14,
-        7,
-        22,
-        5,
-        19,
-        9,
-        3,
-        11
-    ],
-
-    "defect_type": [
-        "Dimensional",
-        "Surface Finish",
-        "Welding",
-        "Assembly",
-        "Surface Finish",
-        "Dimensional",
-        "Alignment",
-        "Packaging"
-    ]
-})
-
-
-# ==================================================
-# KPI CALCULATIONS
-# ==================================================
-
-total_machines = machines["machine_id"].nunique()
-
-average_uptime = uptime_logs[
-    "uptime_percentage"
-].mean()
-
-total_defects = defect_logs[
-    "defect_count"
-].sum()
-
-maintenance_due = maintenance_logs[
-    maintenance_logs["status"].isin(
-        ["Pending", "Scheduled"]
+    machines = pd.read_csv(
+        DATA_DIR / "cleaned_machines.csv"
     )
-].shape[0]
+
+    uptime_logs = pd.read_csv(
+        DATA_DIR / "cleaned_uptime_logs.csv"
+    )
+
+    maintenance_logs = pd.read_csv(
+        DATA_DIR / "cleaned_maintenance_logs.csv"
+    )
+
+    defect_logs = pd.read_csv(
+        DATA_DIR / "cleaned_defect_logs.csv"
+    )
+
+    return (
+        machines,
+        uptime_logs,
+        maintenance_logs,
+        defect_logs
+    )
 
 
-# ==================================================
+# ============================================================
+# LOAD DATA WITH ERROR HANDLING
+# ============================================================
+
+try:
+
+    (
+        machines,
+        uptime_logs,
+        maintenance_logs,
+        defect_logs
+    ) = load_data()
+
+except FileNotFoundError as e:
+
+    st.error(
+        "Processed data files could not be found."
+    )
+
+    st.write(
+        "Expected files inside:"
+    )
+
+    st.code(
+        "data/processed/"
+    )
+
+    st.write(
+        str(e)
+    )
+
+    st.stop()
+
+
+# ============================================================
+# CONVERT DATE COLUMNS
+# ============================================================
+
+if "log_date" in uptime_logs.columns:
+    uptime_logs["log_date"] = pd.to_datetime(
+        uptime_logs["log_date"],
+        errors="coerce"
+    )
+
+if "maintenance_date" in maintenance_logs.columns:
+    maintenance_logs["maintenance_date"] = pd.to_datetime(
+        maintenance_logs["maintenance_date"],
+        errors="coerce"
+    )
+
+if "log_date" in defect_logs.columns:
+    defect_logs["log_date"] = pd.to_datetime(
+        defect_logs["log_date"],
+        errors="coerce"
+    )
+
+
+# ============================================================
+# KPI CALCULATIONS
+# ============================================================
+
+# Total machines
+if "machine_id" in machines.columns:
+
+    total_machines = machines[
+        "machine_id"
+    ].nunique()
+
+else:
+
+    total_machines = 0
+
+
+# Average uptime
+if (
+    "uptime_percentage" in uptime_logs.columns
+    and not uptime_logs.empty
+):
+
+    average_uptime = uptime_logs[
+        "uptime_percentage"
+    ].mean()
+
+else:
+
+    average_uptime = 0
+
+
+# Total defects
+if (
+    "defect_count" in defect_logs.columns
+    and not defect_logs.empty
+):
+
+    total_defects = defect_logs[
+        "defect_count"
+    ].sum()
+
+else:
+
+    total_defects = 0
+
+
+# Maintenance due
+if (
+    "status" in maintenance_logs.columns
+    and not maintenance_logs.empty
+):
+
+    maintenance_due = maintenance_logs[
+        maintenance_logs["status"]
+        .astype(str)
+        .str.lower()
+        .isin(
+            [
+                "pending",
+                "scheduled",
+                "due"
+            ]
+        )
+    ].shape[0]
+
+else:
+
+    maintenance_due = 0
+
+
+# ============================================================
 # SIDEBAR
-# ==================================================
+# ============================================================
 
 with st.sidebar:
 
-    st.title("⚡ SmartFactory")
+    st.markdown(
+        """
+        <div style="
+            font-size:22px;
+            font-weight:700;
+            color:#172033;
+            margin-bottom:0px;
+        ">
+            ⚡ SmartFactory
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.caption("Analytics Platform")
 
     st.divider()
 
-    st.caption("NAVIGATION")
+    st.markdown(
+        "**NAVIGATION**"
+    )
 
-    st.write("📊 Dashboard")
+    st.page_link(
+        "app.py",
+        label="Dashboard",
+        icon="📊"
+    )
+
     st.write("⚙️ Machines")
+
     st.write("🔧 Maintenance")
+
     st.write("⚠️ Defects")
+
     st.write("📈 Reports")
+
     st.write("⬆️ Upload Data")
 
     st.divider()
 
-    st.write("👤 Admin User")
+    st.caption("Admin User")
     st.caption("admin@smartfactory.io")
 
 
-# ==================================================
-# DASHBOARD HEADER
-# ==================================================
+# ============================================================
+# HEADER
+# ============================================================
 
-st.title("Dashboard")
-
-st.caption(
-    "Monitor machine performance, maintenance activity "
-    "and production defects."
+header_col1, header_col2 = st.columns(
+    [5, 1]
 )
+
+with header_col1:
+
+    st.title("Dashboard")
+
+    st.caption(
+        "Monitor machine performance, maintenance activity "
+        "and production defects."
+    )
+
+with header_col2:
+
+    st.write("")
+
+    st.caption(
+        pd.Timestamp.today().strftime(
+            "%B %d, %Y"
+        )
+    )
+
 
 st.divider()
 
 
-# ==================================================
+# ============================================================
 # KPI CARDS
-# ==================================================
+# ============================================================
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -258,8 +330,8 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
 
     st.metric(
-        "Total Machines",
-        total_machines
+        label="Total Machines",
+        value=f"{total_machines:,}"
     )
 
     st.caption(
@@ -270,8 +342,8 @@ with col1:
 with col2:
 
     st.metric(
-        "Average Uptime",
-        f"{average_uptime:.1f}%"
+        label="Average Uptime",
+        value=f"{average_uptime:.1f}%"
     )
 
     st.caption(
@@ -282,8 +354,8 @@ with col2:
 with col3:
 
     st.metric(
-        "Total Defects",
-        total_defects
+        label="Total Defects",
+        value=f"{int(total_defects):,}"
     )
 
     st.caption(
@@ -294,8 +366,8 @@ with col3:
 with col4:
 
     st.metric(
-        "Maintenance Due",
-        maintenance_due
+        label="Maintenance Due",
+        value=f"{maintenance_due:,}"
     )
 
     st.caption(
@@ -306,60 +378,87 @@ with col4:
 st.write("")
 
 
-# ==================================================
-# DASHBOARD CHARTS
-# ==================================================
+# ============================================================
+# CHART SECTION
+# ============================================================
 
-left_chart, right_chart = st.columns(
+chart_left, chart_right = st.columns(
     [2, 1]
 )
 
 
-# --------------------------------------------------
+# ============================================================
 # UPTIME TREND
-# --------------------------------------------------
+# ============================================================
 
-with left_chart:
+with chart_left:
 
     st.subheader(
         "Uptime Trend"
     )
 
     st.caption(
-        "Machine uptime performance"
+        "Machine uptime performance over time"
     )
 
-    fig_uptime = px.line(
-        uptime_logs,
-        x="log_date",
-        y="uptime_percentage",
-        color="machine_id",
-        markers=True
-    )
+    if (
+        "log_date" in uptime_logs.columns
+        and "uptime_percentage" in uptime_logs.columns
+        and not uptime_logs.empty
+    ):
 
-    fig_uptime.update_layout(
-        xaxis_title="Date",
-        yaxis_title="Uptime (%)",
-        legend_title="Machine",
-        margin=dict(
-            l=20,
-            r=20,
-            t=20,
-            b=20
+        fig_uptime = px.line(
+            uptime_logs,
+            x="log_date",
+            y="uptime_percentage",
+            color="machine_id",
+            markers=True
         )
-    )
 
-    st.plotly_chart(
-        fig_uptime,
-        use_container_width=True
-    )
+        fig_uptime.update_layout(
+            height=360,
+            xaxis_title="Date",
+            yaxis_title="Uptime (%)",
+            legend_title="Machine",
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            margin=dict(
+                l=20,
+                r=20,
+                t=20,
+                b=20
+            )
+        )
+
+        fig_uptime.update_yaxes(
+            range=[
+                max(
+                    0,
+                    uptime_logs[
+                        "uptime_percentage"
+                    ].min() - 5
+                ),
+                100
+            ]
+        )
+
+        st.plotly_chart(
+            fig_uptime,
+            use_container_width=True
+        )
+
+    else:
+
+        st.info(
+            "No uptime data available."
+        )
 
 
-# --------------------------------------------------
+# ============================================================
 # DEFECTS BY MACHINE
-# --------------------------------------------------
+# ============================================================
 
-with right_chart:
+with chart_right:
 
     st.subheader(
         "Defects by Machine"
@@ -369,82 +468,130 @@ with right_chart:
         "Total recorded defects"
     )
 
-    defect_summary = (
-        defect_logs
-        .groupby(
-            "machine_id",
-            as_index=False
-        )["defect_count"]
-        .sum()
-    )
+    if (
+        "machine_id" in defect_logs.columns
+        and "defect_count" in defect_logs.columns
+        and not defect_logs.empty
+    ):
 
-    fig_defects = px.bar(
-        defect_summary,
-        x="machine_id",
-        y="defect_count"
-    )
-
-    fig_defects.update_layout(
-        xaxis_title="Machine",
-        yaxis_title="Defects",
-        showlegend=False,
-        margin=dict(
-            l=20,
-            r=20,
-            t=20,
-            b=20
+        defect_summary = (
+            defect_logs
+            .groupby(
+                "machine_id",
+                as_index=False
+            )["defect_count"]
+            .sum()
+            .sort_values(
+                "defect_count",
+                ascending=False
+            )
         )
-    )
 
-    st.plotly_chart(
-        fig_defects,
-        use_container_width=True
-    )
+        fig_defects = px.bar(
+            defect_summary,
+            x="machine_id",
+            y="defect_count"
+        )
+
+        fig_defects.update_layout(
+            height=360,
+            xaxis_title="Machine",
+            yaxis_title="Defects",
+            showlegend=False,
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            margin=dict(
+                l=20,
+                r=20,
+                t=20,
+                b=20
+            )
+        )
+
+        st.plotly_chart(
+            fig_defects,
+            use_container_width=True
+        )
+
+    else:
+
+        st.info(
+            "No defect data available."
+        )
 
 
-# ==================================================
+# ============================================================
 # RECENT MAINTENANCE
-# ==================================================
+# ============================================================
 
 st.subheader(
     "Recent Maintenance"
 )
 
 st.caption(
-    "Latest service events"
+    "Latest maintenance service events"
 )
 
 
-recent_maintenance = (
-    maintenance_logs
-    .sort_values(
-        by="maintenance_date",
-        ascending=False
+if not maintenance_logs.empty:
+
+    recent_maintenance = (
+        maintenance_logs
+        .sort_values(
+            by="maintenance_date",
+            ascending=False
+        )
+        .head(5)
+        .copy()
     )
-    .head(5)
-    .copy()
-)
+
+    # Format date
+    if "maintenance_date" in recent_maintenance.columns:
+
+        recent_maintenance[
+            "maintenance_date"
+        ] = recent_maintenance[
+            "maintenance_date"
+        ].dt.strftime(
+            "%Y-%m-%d"
+        )
+
+    # Only show fields from finalized schema
+    display_columns = [
+        "maintenance_id",
+        "machine_id",
+        "maintenance_date",
+        "maintenance_type",
+        "status"
+    ]
+
+    display_columns = [
+        col
+        for col in display_columns
+        if col in recent_maintenance.columns
+    ]
+
+    st.dataframe(
+        recent_maintenance[
+            display_columns
+        ],
+        use_container_width=True,
+        hide_index=True
+    )
+
+else:
+
+    st.info(
+        "No maintenance records available."
+    )
 
 
-recent_maintenance[
-    "maintenance_date"
-] = recent_maintenance[
-    "maintenance_date"
-].dt.strftime(
-    "%Y-%m-%d"
-)
+# ============================================================
+# FOOTER
+# ============================================================
 
+st.divider()
 
-st.dataframe(
-    recent_maintenance[
-        [
-            "maintenance_id",
-            "machine_id",
-            "maintenance_date",
-            "maintenance_type",
-            "status"
-        ]
-    ],
-    use_container_width=True,
-    hide_index=True
+st.caption(
+    "SmartFactory | Manufacturing Quality Analytics"
 )
