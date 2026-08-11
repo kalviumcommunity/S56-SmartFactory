@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from pathlib import Path
+from supabase import create_client
 
 
 # ============================================================
@@ -17,6 +17,16 @@ st.set_page_config(
 
 
 # ============================================================
+# SUPABASE CONNECTION
+# ============================================================
+
+supabase = create_client(
+    st.secrets["SUPABASE_URL"],
+    st.secrets["SUPABASE_KEY"]
+)
+
+
+# ============================================================
 # CUSTOM STYLING
 # ============================================================
 
@@ -24,18 +34,15 @@ st.markdown(
     """
     <style>
 
-    /* Main background */
     .stApp {
         background-color: #f7f8fa;
     }
 
-    /* Sidebar */
     section[data-testid="stSidebar"] {
         background-color: #ffffff;
         border-right: 1px solid #e5e7eb;
     }
 
-    /* Main title */
     h1 {
         color: #172033;
         font-size: 28px;
@@ -46,7 +53,6 @@ st.markdown(
         color: #172033;
     }
 
-    /* Metric cards */
     div[data-testid="stMetric"] {
         background-color: white;
         border: 1px solid #e5e7eb;
@@ -62,11 +68,6 @@ st.markdown(
         color: #172033;
     }
 
-    /* Dataframe */
-    div[data-testid="stDataFrame"] {
-        border-radius: 10px;
-    }
-
     </style>
     """,
     unsafe_allow_html=True
@@ -74,34 +75,54 @@ st.markdown(
 
 
 # ============================================================
-# DATA PATH
+# LOAD DATA FROM SUPABASE
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data" / "processed"
-
-
-# ============================================================
-# LOAD CLEANED DATA
-# ============================================================
-
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_data():
 
-    machines = pd.read_csv(
-        DATA_DIR / "cleaned_machines.csv"
+    machines_response = (
+        supabase
+        .table("machines")
+        .select("*")
+        .execute()
     )
 
-    uptime_logs = pd.read_csv(
-        DATA_DIR / "cleaned_uptime_logs.csv"
+    uptime_response = (
+        supabase
+        .table("uptime_logs")
+        .select("*")
+        .execute()
     )
 
-    maintenance_logs = pd.read_csv(
-        DATA_DIR / "cleaned_maintenance_logs.csv"
+    maintenance_response = (
+        supabase
+        .table("maintenance_logs")
+        .select("*")
+        .execute()
     )
 
-    defect_logs = pd.read_csv(
-        DATA_DIR / "cleaned_defect_logs.csv"
+    defect_response = (
+        supabase
+        .table("defect_logs")
+        .select("*")
+        .execute()
+    )
+
+    machines = pd.DataFrame(
+        machines_response.data
+    )
+
+    uptime_logs = pd.DataFrame(
+        uptime_response.data
+    )
+
+    maintenance_logs = pd.DataFrame(
+        maintenance_response.data
+    )
+
+    defect_logs = pd.DataFrame(
+        defect_response.data
     )
 
     return (
@@ -113,7 +134,7 @@ def load_data():
 
 
 # ============================================================
-# LOAD DATA WITH ERROR HANDLING
+# GET DATA
 # ============================================================
 
 try:
@@ -125,23 +146,13 @@ try:
         defect_logs
     ) = load_data()
 
-except FileNotFoundError as e:
+except Exception as e:
 
     st.error(
-        "Processed data files could not be found."
+        "Unable to load data from Supabase."
     )
 
-    st.write(
-        "Expected files inside:"
-    )
-
-    st.code(
-        "data/processed/"
-    )
-
-    st.write(
-        str(e)
-    )
+    st.code(str(e))
 
     st.stop()
 
@@ -151,18 +162,23 @@ except FileNotFoundError as e:
 # ============================================================
 
 if "log_date" in uptime_logs.columns:
+
     uptime_logs["log_date"] = pd.to_datetime(
         uptime_logs["log_date"],
         errors="coerce"
     )
 
+
 if "maintenance_date" in maintenance_logs.columns:
+
     maintenance_logs["maintenance_date"] = pd.to_datetime(
         maintenance_logs["maintenance_date"],
         errors="coerce"
     )
 
+
 if "log_date" in defect_logs.columns:
+
     defect_logs["log_date"] = pd.to_datetime(
         defect_logs["log_date"],
         errors="coerce"
@@ -173,49 +189,29 @@ if "log_date" in defect_logs.columns:
 # KPI CALCULATIONS
 # ============================================================
 
-# Total machines
-if "machine_id" in machines.columns:
-
-    total_machines = machines[
-        "machine_id"
-    ].nunique()
-
-else:
-
-    total_machines = 0
+total_machines = (
+    machines["machine_id"].nunique()
+    if "machine_id" in machines.columns
+    else 0
+)
 
 
-# Average uptime
-if (
-    "uptime_percentage" in uptime_logs.columns
+average_uptime = (
+    uptime_logs["uptime_percentage"].mean()
+    if "uptime_percentage" in uptime_logs.columns
     and not uptime_logs.empty
-):
-
-    average_uptime = uptime_logs[
-        "uptime_percentage"
-    ].mean()
-
-else:
-
-    average_uptime = 0
+    else 0
+)
 
 
-# Total defects
-if (
-    "defect_count" in defect_logs.columns
+total_defects = (
+    defect_logs["defect_count"].sum()
+    if "defect_count" in defect_logs.columns
     and not defect_logs.empty
-):
-
-    total_defects = defect_logs[
-        "defect_count"
-    ].sum()
-
-else:
-
-    total_defects = 0
+    else 0
+)
 
 
-# Maintenance due
 if (
     "status" in maintenance_logs.columns
     and not maintenance_logs.empty
@@ -251,7 +247,6 @@ with st.sidebar:
             font-size:22px;
             font-weight:700;
             color:#172033;
-            margin-bottom:0px;
         ">
             ⚡ SmartFactory
         </div>
@@ -263,9 +258,7 @@ with st.sidebar:
 
     st.divider()
 
-    st.markdown(
-        "**NAVIGATION**"
-    )
+    st.markdown("**NAVIGATION**")
 
     st.page_link(
         "app.py",
@@ -297,6 +290,7 @@ header_col1, header_col2 = st.columns(
     [5, 1]
 )
 
+
 with header_col1:
 
     st.title("Dashboard")
@@ -305,6 +299,7 @@ with header_col1:
         "Monitor machine performance, maintenance activity "
         "and production defects."
     )
+
 
 with header_col2:
 
@@ -330,8 +325,8 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
 
     st.metric(
-        label="Total Machines",
-        value=f"{total_machines:,}"
+        "Total Machines",
+        f"{total_machines:,}"
     )
 
     st.caption(
@@ -342,8 +337,8 @@ with col1:
 with col2:
 
     st.metric(
-        label="Average Uptime",
-        value=f"{average_uptime:.1f}%"
+        "Average Uptime",
+        f"{average_uptime:.1f}%"
     )
 
     st.caption(
@@ -354,8 +349,8 @@ with col2:
 with col3:
 
     st.metric(
-        label="Total Defects",
-        value=f"{int(total_defects):,}"
+        "Total Defects",
+        f"{int(total_defects):,}"
     )
 
     st.caption(
@@ -366,8 +361,8 @@ with col3:
 with col4:
 
     st.metric(
-        label="Maintenance Due",
-        value=f"{maintenance_due:,}"
+        "Maintenance Due",
+        f"{maintenance_due:,}"
     )
 
     st.caption(
@@ -379,7 +374,7 @@ st.write("")
 
 
 # ============================================================
-# CHART SECTION
+# CHARTS
 # ============================================================
 
 chart_left, chart_right = st.columns(
@@ -393,9 +388,7 @@ chart_left, chart_right = st.columns(
 
 with chart_left:
 
-    st.subheader(
-        "Uptime Trend"
-    )
+    st.subheader("Uptime Trend")
 
     st.caption(
         "Machine uptime performance over time"
@@ -430,18 +423,6 @@ with chart_left:
             )
         )
 
-        fig_uptime.update_yaxes(
-            range=[
-                max(
-                    0,
-                    uptime_logs[
-                        "uptime_percentage"
-                    ].min() - 5
-                ),
-                100
-            ]
-        )
-
         st.plotly_chart(
             fig_uptime,
             use_container_width=True
@@ -460,9 +441,7 @@ with chart_left:
 
 with chart_right:
 
-    st.subheader(
-        "Defects by Machine"
-    )
+    st.subheader("Defects by Machine")
 
     st.caption(
         "Total recorded defects"
@@ -524,9 +503,7 @@ with chart_right:
 # RECENT MAINTENANCE
 # ============================================================
 
-st.subheader(
-    "Recent Maintenance"
-)
+st.subheader("Recent Maintenance")
 
 st.caption(
     "Latest maintenance service events"
@@ -545,7 +522,6 @@ if not maintenance_logs.empty:
         .copy()
     )
 
-    # Format date
     if "maintenance_date" in recent_maintenance.columns:
 
         recent_maintenance[
@@ -556,7 +532,6 @@ if not maintenance_logs.empty:
             "%Y-%m-%d"
         )
 
-    # Only show fields from finalized schema
     display_columns = [
         "maintenance_id",
         "machine_id",
@@ -566,9 +541,9 @@ if not maintenance_logs.empty:
     ]
 
     display_columns = [
-        col
-        for col in display_columns
-        if col in recent_maintenance.columns
+        column
+        for column in display_columns
+        if column in recent_maintenance.columns
     ]
 
     st.dataframe(
@@ -586,9 +561,9 @@ else:
     )
 
 
-# ============================================================
+# ===========================================================
 # FOOTER
-# ============================================================
+# ===========================================================
 
 st.divider()
 
