@@ -1,6 +1,12 @@
 import streamlit as st
 import pandas as pd
+import os
 from supabase import create_client
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 
 # ============================================================
@@ -18,10 +24,16 @@ st.set_page_config(
 # SUPABASE CONNECTION
 # ============================================================
 
-supabase = create_client(
-    st.secrets["SUPABASE_URL"],
-    st.secrets["SUPABASE_KEY"]
-)
+try:
+    supabase_url = st.secrets.get("SUPABASE_URL") if "SUPABASE_URL" in st.secrets else os.getenv("SUPABASE_URL")
+    supabase_key = st.secrets.get("SUPABASE_KEY") if "SUPABASE_KEY" in st.secrets else os.getenv("SUPABASE_KEY")
+    if not supabase_url or not supabase_key:
+        raise ValueError("Missing SUPABASE_URL or SUPABASE_KEY in st.secrets or environment variables.")
+    supabase = create_client(supabase_url, supabase_key)
+except Exception as e:
+    st.error("Unable to connect to Supabase.")
+    st.code(str(e))
+    st.stop()
 
 
 # ============================================================
@@ -138,12 +150,13 @@ search = st.text_input(
 
 
 # ============================================================
-# MACHINE TYPE FILTER
+# MACHINE TYPE / MODEL FILTER
 # ============================================================
 
 machine_type_column = None
 
 possible_type_columns = [
+    "model",
     "machine_type",
     "type",
     "machineType"
@@ -167,8 +180,9 @@ if machine_type_column:
         .tolist()
     )
 
+    filter_label = "Machine Model" if machine_type_column == "model" else "Machine Type"
     selected_type = st.selectbox(
-        "Machine Type",
+        filter_label,
         machine_types
     )
 
