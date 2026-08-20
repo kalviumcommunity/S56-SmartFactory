@@ -19,8 +19,8 @@ from components.theme import apply_theme, get_theme, init_theme, render_sidebar
 # ============================================================
 
 st.set_page_config(
-    page_title="SmartFactory - Maintenance",
-    page_icon=":material/build:",
+    page_title="SmartFactory - Defects",
+    page_icon=":material/warning:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -107,39 +107,39 @@ def fetch_records(
 
 @st.cache_data(
     ttl=300,
-    show_spinner="Loading maintenance data...",
+    show_spinner="Loading defect data...",
 )
-def load_maintenance_data():
+def load_defect_data():
     machines_data = fetch_records(
         "machines",
         max_records=1000,
     )
 
-    maintenance_data = fetch_records(
-        "maintenance_logs",
+    defect_data = fetch_records(
+        "defect_logs",
         max_records=5000,
     )
 
-    machines = pd.DataFrame(machines_data)
-    maintenance = pd.DataFrame(maintenance_data)
+    machines_df = pd.DataFrame(machines_data)
+    defects_df = pd.DataFrame(defect_data)
 
     if (
-        not machines.empty
-        and "machine_id" in machines.columns
+        not machines_df.empty
+        and "machine_id" in machines_df.columns
     ):
-        machines["machine_id"] = (
-            machines["machine_id"].astype(str)
+        machines_df["machine_id"] = (
+            machines_df["machine_id"].astype(str)
         )
 
     if (
-        not maintenance.empty
-        and "machine_id" in maintenance.columns
+        not defects_df.empty
+        and "machine_id" in defects_df.columns
     ):
-        maintenance["machine_id"] = (
-            maintenance["machine_id"].astype(str)
+        defects_df["machine_id"] = (
+            defects_df["machine_id"].astype(str)
         )
 
-    return machines, maintenance
+    return machines_df, defects_df
 
 
 # ============================================================
@@ -147,121 +147,147 @@ def load_maintenance_data():
 # ============================================================
 
 try:
-    machines, maint_logs = load_maintenance_data()
+    machines, raw_defects = load_defect_data()
 except Exception as e:
-    st.error("Unable to load maintenance data from Supabase.")
+    st.error("Unable to load defect data from Supabase.")
     st.code(str(e))
     st.stop()
 
 
 # ============================================================
-# NORMALIZE MAINTENANCE DATA
+# NORMALIZE DEFECT DATA
 # ============================================================
 
-if maint_logs.empty:
-    normalized_maint = pd.DataFrame(
+if raw_defects.empty:
+    normalized_defects = pd.DataFrame(
         columns=[
-            "maintenance_id",
+            "defect_id",
             "machine_id",
             "model",
-            "maintenance_date",
-            "maintenance_type",
-            "status",
+            "log_date",
+            "defect_count",
+            "defect_type",
             "raw_date",
         ]
     )
 else:
-    df = maint_logs.copy()
+    df = raw_defects.copy()
 
     # --------------------------------------------------------
     # DATE COLUMN
     # --------------------------------------------------------
-    if "maintenance_date" in df.columns:
-        date_col = "maintenance_date"
-    elif "timestamp" in df.columns:
-        date_col = "timestamp"
-    elif "date" in df.columns:
-        date_col = "date"
-    else:
-        date_col = None
+    date_col = None
+    for candidate in ["log_date", "timestamp", "date", "datetime"]:
+        if candidate in df.columns:
+            date_col = candidate
+            break
 
     if date_col:
         df["raw_date"] = pd.to_datetime(
             df[date_col],
             errors="coerce",
         )
-        df["maintenance_date"] = (
+        df["log_date"] = (
             df["raw_date"]
             .dt.strftime("%Y-%m-%d")
             .fillna("Not Specified")
         )
     else:
         df["raw_date"] = pd.NaT
-        df["maintenance_date"] = "Not Specified"
+        df["log_date"] = "Not Specified"
 
     # --------------------------------------------------------
-    # TYPE
+    # DEFECT COUNT
     # --------------------------------------------------------
-    if "maintenance_type" in df.columns:
-        type_col = "maintenance_type"
-    elif "log_type" in df.columns:
-        type_col = "log_type"
-    elif "type" in df.columns:
-        type_col = "type"
+    count_col = None
+    for candidate in [
+        "defect_count",
+        "defective_units",
+        "defects",
+        "defect_units",
+        "count",
+    ]:
+        if candidate in df.columns:
+            count_col = candidate
+            break
+
+    if count_col:
+        df["defect_count"] = (
+            pd.to_numeric(df[count_col], errors="coerce")
+            .fillna(0)
+            .round()
+            .astype(int)
+        )
+    elif "production_output" in df.columns and "defect_rate" in df.columns:
+        output_series = pd.to_numeric(
+            df["production_output"], errors="coerce"
+        ).fillna(0)
+        rate_series = pd.to_numeric(
+            df["defect_rate"], errors="coerce"
+        ).fillna(0)
+        df["defect_count"] = (
+            (output_series * rate_series / 100.0)
+            .round()
+            .astype(int)
+        )
     else:
-        type_col = None
+        df["defect_count"] = 1
+
+    # --------------------------------------------------------
+    # DEFECT TYPE (HANDLE MISSING / NULL SAFELY)
+    # --------------------------------------------------------
+    type_col = None
+    for candidate in [
+        "defect_type",
+        "material_name",
+        "type",
+        "classification",
+        "category",
+    ]:
+        if candidate in df.columns:
+            type_col = candidate
+            break
 
     if type_col:
-        df["maintenance_type"] = (
+        df["defect_type"] = (
             df[type_col]
-            .fillna("Preventive")
+            .fillna("Unclassified")
             .astype(str)
+            .str.strip()
         )
-        df["maintenance_type"] = (
-            df["maintenance_type"]
-            .replace(
-                {
-                    "Scheduled": "Preventive",
-                    "scheduled": "Preventive",
-                    "Failure": "Corrective",
-                    "failure": "Corrective",
-                }
-            )
+        df["defect_type"] = df["defect_type"].replace(
+            {
+                "": "Unclassified",
+                "nan": "Unclassified",
+                "None": "Unclassified",
+                "null": "Unclassified",
+            }
         )
     else:
-        df["maintenance_type"] = "Preventive"
+        df["defect_type"] = "Unclassified"
 
     # --------------------------------------------------------
-    # STATUS
+    # DEFECT ID
     # --------------------------------------------------------
-    if "status" in df.columns:
-        df["status"] = (
-            df["status"]
-            .fillna("Completed")
-            .astype(str)
-        )
-    else:
-        df["status"] = "Completed"
+    id_col = None
+    for candidate in ["defect_id", "id"]:
+        if candidate in df.columns:
+            id_col = candidate
+            break
 
-    # --------------------------------------------------------
-    # MAINTENANCE ID
-    # --------------------------------------------------------
-    if "maintenance_id" in df.columns:
-        df["maintenance_id"] = df["maintenance_id"].astype(str)
-    elif "id" in df.columns:
-        df["maintenance_id"] = df["id"].astype(str)
+    if id_col:
+        df["defect_id"] = df[id_col].astype(str)
     else:
-        df["maintenance_id"] = [
-            f"MNT-{i + 1:05d}"
-            for i in range(len(df))
+        df["defect_id"] = [
+            f"DEF-{i + 1:05d}" for i in range(len(df))
         ]
 
     # --------------------------------------------------------
-    # MODEL
+    # MODEL LOOKUP FROM MACHINES
     # --------------------------------------------------------
     model_column = None
     for column in ["model", "machine_type", "type"]:
-        if column in machines.columns:
+        if not machines.empty and column in machines.columns:
             model_column = column
             break
 
@@ -272,12 +298,7 @@ else:
         and "machine_id" in df.columns
     ):
         machine_lookup = (
-            machines[
-                [
-                    "machine_id",
-                    model_column,
-                ]
-            ]
+            machines[["machine_id", model_column]]
             .drop_duplicates(subset=["machine_id"])
         )
         df = df.merge(
@@ -294,16 +315,16 @@ else:
         df["model"] = "Unknown"
 
     # --------------------------------------------------------
-    # FINAL DATASET
+    # FINAL NORMALIZED DATASET
     # --------------------------------------------------------
-    normalized_maint = df[
+    normalized_defects = df[
         [
-            "maintenance_id",
+            "defect_id",
             "machine_id",
             "model",
-            "maintenance_date",
-            "maintenance_type",
-            "status",
+            "log_date",
+            "defect_count",
+            "defect_type",
             "raw_date",
         ]
     ].copy()
@@ -313,7 +334,7 @@ else:
 # SIDEBAR
 # ============================================================
 
-render_sidebar(current_page="maintenance")
+render_sidebar(current_page="defects")
 
 
 # ============================================================
@@ -323,10 +344,10 @@ render_sidebar(current_page="maintenance")
 header_left, header_right = st.columns([8, 1])
 
 with header_left:
-    st.title("Maintenance")
+    st.title("Defects")
     st.caption(
-        "Monitor scheduled preventive and corrective "
-        "maintenance events across factory machinery."
+        "Monitor defect occurrences, track quality trends, "
+        "and isolate high-defect machinery across the factory floor."
     )
 
 with header_right:
@@ -344,8 +365,8 @@ with header_right:
 # EMPTY DATABASE CHECK
 # ============================================================
 
-if normalized_maint.empty:
-    st.info("No maintenance records found in Supabase.")
+if normalized_defects.empty:
+    st.info("No defect records found in Supabase.")
     st.stop()
 
 
@@ -353,9 +374,9 @@ if normalized_maint.empty:
 # FILTER SECTION
 # ============================================================
 
-st.subheader("Maintenance Filters")
+st.subheader("Defect Filters")
 
-filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+filter_col1, filter_col2, filter_col3 = st.columns(3)
 
 
 # ------------------------------------------------------------
@@ -364,7 +385,7 @@ filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
 
 with filter_col1:
     machine_options = (
-        normalized_maint["machine_id"]
+        normalized_defects["machine_id"]
         .dropna()
         .astype(str)
         .unique()
@@ -378,49 +399,30 @@ with filter_col1:
 
 
 # ------------------------------------------------------------
-# TYPE FILTER
+# DEFECT TYPE FILTER
 # ------------------------------------------------------------
 
 with filter_col2:
     type_options = (
-        normalized_maint["maintenance_type"]
+        normalized_defects["defect_type"]
         .dropna()
         .astype(str)
         .unique()
         .tolist()
     )
-    type_options = ["All Types"] + sorted(type_options)
+    type_options = ["All Defect Types"] + sorted(type_options)
     selected_type = st.selectbox(
-        "Maintenance Type",
+        "Defect Type",
         type_options,
     )
 
 
 # ------------------------------------------------------------
-# STATUS FILTER
+# DATE RANGE FILTER
 # ------------------------------------------------------------
 
 with filter_col3:
-    status_options = (
-        normalized_maint["status"]
-        .dropna()
-        .astype(str)
-        .unique()
-        .tolist()
-    )
-    status_options = ["All Status"] + sorted(status_options)
-    selected_status = st.selectbox(
-        "Status",
-        status_options,
-    )
-
-
-# ------------------------------------------------------------
-# DATE FILTER
-# ------------------------------------------------------------
-
-with filter_col4:
-    valid_dates = normalized_maint["raw_date"].dropna()
+    valid_dates = normalized_defects["raw_date"].dropna()
 
     if not valid_dates.empty:
         min_date = valid_dates.min().date()
@@ -441,21 +443,16 @@ with filter_col4:
 # APPLY FILTERS
 # ============================================================
 
-filtered_df = normalized_maint.copy()
+filtered_df = normalized_defects.copy()
 
 if selected_machine != "All Machines":
     filtered_df = filtered_df[
         filtered_df["machine_id"].astype(str) == selected_machine
     ]
 
-if selected_type != "All Types":
+if selected_type != "All Defect Types":
     filtered_df = filtered_df[
-        filtered_df["maintenance_type"].astype(str) == selected_type
-    ]
-
-if selected_status != "All Status":
-    filtered_df = filtered_df[
-        filtered_df["status"].astype(str) == selected_status
+        filtered_df["defect_type"].astype(str) == selected_type
     ]
 
 if (
@@ -477,141 +474,174 @@ if (
 
 
 # ============================================================
-# OVERVIEW
+# OVERVIEW KPIS (Requirement 1)
 # ============================================================
 
 st.subheader("Overview")
 
-total_events = len(filtered_df)
-preventive_count = int(
-    (
-        filtered_df["maintenance_type"]
-        .astype(str)
-        .str.lower()
-        == "preventive"
-    ).sum()
+total_defects = int(filtered_df["defect_count"].sum())
+machines_with_defects = int(
+    filtered_df[filtered_df["defect_count"] > 0]["machine_id"].nunique()
+    if not filtered_df.empty
+    else 0
 )
-corrective_count = int(
-    (
-        filtered_df["maintenance_type"]
-        .astype(str)
-        .str.lower()
-        == "corrective"
-    ).sum()
+defect_types_count = int(
+    filtered_df["defect_type"].nunique()
+    if not filtered_df.empty
+    else 0
 )
 
 kpi_col1, kpi_col2, kpi_col3 = st.columns(3)
 
 with kpi_col1:
     st.metric(
-        "Total Maintenance Events",
-        f"{total_events:,}",
+        "Total Defects",
+        f"{total_defects:,}",
     )
 
 with kpi_col2:
     st.metric(
-        "Preventive Maintenance",
-        f"{preventive_count:,}",
+        "Machines with Defects",
+        f"{machines_with_defects:,}",
     )
 
 with kpi_col3:
     st.metric(
-        "Corrective Maintenance",
-        f"{corrective_count:,}",
+        "Defect Types",
+        f"{defect_types_count:,}",
     )
 
 
 # ============================================================
-# MAINTENANCE ANALYSIS
+# ANALYTICS (Requirement 3 & 7: Query 4, Query 5, Trend)
 # ============================================================
 
-st.subheader("Maintenance Analysis")
+st.subheader("Defect Analytics")
 
 accent_color = "#3b82f6" if get_theme() == "dark" else "#2563eb"
 
 chart_col1, chart_col2 = st.columns(2, gap="medium")
 
+# ------------------------------------------------------------
+# DEFECTS BY MACHINE (Query 4)
+# ------------------------------------------------------------
+
 with chart_col1:
     with st.container(border=True):
         st.markdown(
             """
-            <div class="chart-card-title">Maintenance Events by Type</div>
-            <div class="chart-card-subtitle">Distribution of preventive vs corrective work orders</div>
+            <div class="chart-card-title">Defects by Machine</div>
+            <div class="chart-card-subtitle">Top 10 machines with highest defect counts</div>
             """,
             unsafe_allow_html=True,
         )
         if not filtered_df.empty:
-            type_counts = (
-                filtered_df
-                .groupby("maintenance_type")
-                .size()
-                .rename("Events")
+            machine_defect_series = (
+                filtered_df.groupby("machine_id")["defect_count"]
+                .sum()
+                .rename("Defects")
                 .sort_values(ascending=False)
+                .head(10)
             )
             st.bar_chart(
-                type_counts,
+                machine_defect_series,
                 color=accent_color,
                 height=280,
             )
         else:
-            st.info("No data available.")
+            st.info("No defect data available.")
 
+
+# ------------------------------------------------------------
+# DEFECTS BY DEFECT TYPE (Query 5)
+# ------------------------------------------------------------
 
 with chart_col2:
     with st.container(border=True):
         st.markdown(
             """
-            <div class="chart-card-title">Maintenance by Machine</div>
-            <div class="chart-card-subtitle">Top 10 machines with highest service log frequencies</div>
+            <div class="chart-card-title">Defects by Defect Type</div>
+            <div class="chart-card-subtitle">Top defect classifications across all machinery</div>
             """,
             unsafe_allow_html=True,
         )
         if not filtered_df.empty:
-            machine_counts = (
-                filtered_df
-                .groupby("machine_id")
-                .size()
-                .rename("Events")
+            type_defect_series = (
+                filtered_df.groupby("defect_type")["defect_count"]
+                .sum()
+                .rename("Defects")
                 .sort_values(ascending=False)
                 .head(10)
             )
             st.bar_chart(
-                machine_counts,
+                type_defect_series,
                 color=accent_color,
                 height=280,
             )
         else:
-            st.info("No machine data available.")
+            st.info("No defect type data available.")
+
+
+# ------------------------------------------------------------
+# DEFECT TREND OVER TIME
+# ------------------------------------------------------------
+
+with st.container(border=True):
+    st.markdown(
+        """
+        <div class="chart-card-title">Defect Trend Over Time</div>
+        <div class="chart-card-subtitle">Daily defect occurrences timeline across the factory floor</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if not filtered_df.empty and not filtered_df["raw_date"].dropna().empty:
+        trend_series = (
+            filtered_df.dropna(subset=["raw_date"])
+            .groupby(filtered_df["raw_date"].dt.date)["defect_count"]
+            .sum()
+            .rename("Defects")
+            .sort_index()
+        )
+        st.line_chart(
+            trend_series,
+            color=accent_color,
+            height=260,
+        )
+    else:
+        st.info("No date-based defect trends available.")
+
+st.write("")
 
 
 # ============================================================
-# MAINTENANCE RECORDS
+# DETAILED DEFECT RECORDS TABLE (Requirement 4)
 # ============================================================
 
-st.subheader("Maintenance Records")
+st.subheader("Defect Records")
 
 st.caption(
     f"Showing {len(filtered_df):,} "
-    f"of {len(normalized_maint):,} maintenance records"
+    f"of {len(normalized_defects):,} defect records"
 )
 
 display_table = filtered_df[
     [
-        "maintenance_id",
+        "defect_id",
         "machine_id",
         "model",
-        "maintenance_date",
-        "maintenance_type",
-        "status",
+        "log_date",
+        "defect_count",
+        "defect_type",
     ]
 ].rename(
     columns={
-        "maintenance_id": "Maintenance ID",
+        "defect_id": "Defect ID",
         "machine_id": "Machine ID",
         "model": "Model",
-        "maintenance_date": "Maintenance Date",
-        "maintenance_type": "Type",
-        "status": "Status",
+        "log_date": "Log Date",
+        "defect_count": "Defect Count",
+        "defect_type": "Defect Type",
     }
 )
 
@@ -629,11 +659,11 @@ st.dataframe(
 
 with st.expander("Database information"):
     st.write("Data sources:")
-    st.code("machines\nmaintenance_logs")
+    st.code("machines\ndefect_logs")
 
-    st.write("Maintenance columns:")
+    st.write("Defect logs columns:")
     st.write(
-        maint_logs.columns.tolist()
-        if not maint_logs.empty
+        raw_defects.columns.tolist()
+        if not raw_defects.empty
         else []
     )

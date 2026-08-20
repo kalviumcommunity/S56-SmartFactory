@@ -1,8 +1,17 @@
+import importlib
 import os
+import sys
+
+# Ensure root path is accessible for component imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pandas as pd
 import streamlit as st
 from supabase import create_client
+
+import components.theme
+importlib.reload(components.theme)
+from components.theme import apply_theme, get_theme, init_theme, render_sidebar
 
 
 # ============================================================
@@ -16,316 +25,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-
-# ============================================================
-# GLOBAL STYLING
-# ============================================================
-
-st.markdown(
-    """
-    <style>
-
-    /* ========================================================
-       BASE
-       ======================================================== */
-
-    .stApp {
-        background: #f8f9fb;
-        color: #101828;
-    }
-
-    .main .block-container {
-        max-width: 1500px;
-        padding: 32px 40px 60px 40px;
-    }
-
-    #MainMenu {
-        visibility: hidden;
-    }
-
-    footer {
-        visibility: hidden;
-    }
-
-    header[data-testid="stHeader"] {
-        background: #ffffff;
-        border-bottom: 1px solid #eaecf0;
-    }
-
-
-    /* ========================================================
-       TEXT
-       ======================================================== */
-
-    .stApp p {
-        color: #475467 !important;
-    }
-
-    .stApp label {
-        color: #344054 !important;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4 {
-        color: #101828 !important;
-    }
-
-    h1 {
-        font-size: 30px !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.025em;
-    }
-
-    h2 {
-        font-size: 20px !important;
-        font-weight: 650 !important;
-    }
-
-    h3 {
-        font-size: 18px !important;
-        font-weight: 650 !important;
-    }
-
-
-    /* ========================================================
-       SIDEBAR
-       ======================================================== */
-
-    section[data-testid="stSidebar"] {
-        background: #ffffff;
-        border-right: 1px solid #e4e7ec;
-    }
-
-    section[data-testid="stSidebar"] .block-container {
-        padding: 24px 16px;
-    }
-
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] label {
-        color: #344054 !important;
-    }
-
-    section[data-testid="stSidebar"]
-    [data-testid="stPageLink-NavLink"] {
-        border-radius: 8px;
-        min-height: 42px;
-        margin: 4px 0;
-        color: #344054 !important;
-        font-size: 14px;
-        font-weight: 500;
-    }
-
-    section[data-testid="stSidebar"]
-    [data-testid="stPageLink-NavLink"]:hover {
-        background: #f2f5ff;
-        color: #2563eb !important;
-    }
-
-    section[data-testid="stSidebar"]
-    [data-testid="stPageLink-NavLink"] svg {
-        color: #475467 !important;
-        width: 19px;
-        height: 19px;
-    }
-
-    section[data-testid="stSidebar"]
-    [data-testid="stPageLink-NavLink"][aria-current="page"] {
-        background: #edf3ff;
-        color: #2563eb !important;
-        font-weight: 600;
-    }
-
-    section[data-testid="stSidebar"]
-    [data-testid="stPageLink-NavLink"][aria-current="page"] svg {
-        color: #2563eb !important;
-    }
-
-
-    /* ========================================================
-       BRAND
-       ======================================================== */
-
-    .brand-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        background: #2563eb;
-        color: #ffffff !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        font-weight: 700;
-    }
-
-    .brand-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #101828 !important;
-        line-height: 22px;
-    }
-
-    .brand-subtitle {
-        font-size: 11px;
-        color: #667085 !important;
-        margin-top: 2px;
-    }
-
-
-    /* ========================================================
-       FILTERS
-       ======================================================== */
-
-    div[data-baseweb="select"] > div {
-        background: #ffffff !important;
-        border: 1px solid #d0d5dd !important;
-        border-radius: 7px !important;
-        color: #344054 !important;
-    }
-
-    div[data-baseweb="select"] span {
-        color: #344054 !important;
-    }
-
-    div[data-baseweb="select"] input {
-        color: #344054 !important;
-    }
-
-    ul[data-baseweb="menu"] {
-        background: #ffffff !important;
-    }
-
-    ul[data-baseweb="menu"] li {
-        color: #344054 !important;
-        background: #ffffff !important;
-    }
-
-    ul[data-baseweb="menu"] li:hover {
-        background: #f2f4f7 !important;
-    }
-
-    div[data-testid="stSelectbox"] label {
-        color: #344054 !important;
-        font-weight: 600 !important;
-    }
-
-
-    /* ========================================================
-       SEARCH
-       ======================================================== */
-
-    div[data-testid="stTextInput"] label {
-        color: #344054 !important;
-        font-weight: 600 !important;
-    }
-
-    div[data-testid="stTextInput"] input {
-        background: #ffffff !important;
-        border: 1px solid #d0d5dd !important;
-        border-radius: 7px !important;
-        color: #344054 !important;
-    }
-
-    div[data-testid="stTextInput"] input::placeholder {
-        color: #98a2b3 !important;
-    }
-
-
-    /* ========================================================
-       METRICS
-       ======================================================== */
-
-    div[data-testid="stMetric"] {
-        background: #ffffff !important;
-        border: 1px solid #e4e7ec !important;
-        border-radius: 10px !important;
-        padding: 18px !important;
-        min-height: 105px;
-        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
-    }
-
-    div[data-testid="stMetricLabel"] {
-        color: #667085 !important;
-        font-size: 12px !important;
-    }
-
-    div[data-testid="stMetricLabel"] p {
-        color: #667085 !important;
-    }
-
-    div[data-testid="stMetricValue"] {
-        color: #101828 !important;
-        font-size: 27px !important;
-        font-weight: 700 !important;
-    }
-
-    div[data-testid="stMetricValue"] div {
-        color: #101828 !important;
-    }
-
-
-    /* ========================================================
-       TABLE
-       ======================================================== */
-
-    div[data-testid="stDataFrame"] {
-        border: 1px solid #e4e7ec;
-        border-radius: 8px;
-        overflow: hidden;
-        background: #ffffff;
-    }
-
-
-    /* ========================================================
-       EXPANDER
-       ======================================================== */
-
-    [data-testid="stExpander"] {
-        background: #ffffff !important;
-        border: 1px solid #e4e7ec !important;
-        border-radius: 8px !important;
-    }
-
-    [data-testid="stExpander"] summary {
-        color: #344054 !important;
-    }
-
-    [data-testid="stExpander"] summary span {
-        color: #344054 !important;
-    }
-
-
-    /* ========================================================
-       CAPTIONS
-       ======================================================== */
-
-    [data-testid="stCaptionContainer"] {
-        color: #667085 !important;
-    }
-
-    [data-testid="stCaptionContainer"] p {
-        color: #667085 !important;
-    }
-
-
-    /* ========================================================
-       PAGE DATE
-       ======================================================== */
-
-    .page-date {
-        color: #667085 !important;
-        font-size: 13px;
-        text-align: right;
-        padding-top: 10px;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# Initialize and apply active theme (defaults to Light)
+init_theme()
+apply_theme()
 
 
 # ============================================================
@@ -333,7 +35,6 @@ st.markdown(
 # ============================================================
 
 try:
-
     if "SUPABASE_URL" in st.secrets:
         supabase_url = st.secrets["SUPABASE_URL"]
     else:
@@ -345,14 +46,10 @@ try:
         supabase_key = os.getenv("SUPABASE_KEY")
 
     if not supabase_url:
-        raise ValueError(
-            "SUPABASE_URL is missing."
-        )
+        raise ValueError("SUPABASE_URL is missing.")
 
     if not supabase_key:
-        raise ValueError(
-            "SUPABASE_KEY is missing."
-        )
+        raise ValueError("SUPABASE_KEY is missing.")
 
     supabase = create_client(
         supabase_url,
@@ -360,11 +57,7 @@ try:
     )
 
 except Exception as e:
-
-    st.error(
-        "Unable to connect to Supabase."
-    )
-
+    st.error("Unable to connect to Supabase.")
     st.code(str(e))
     st.stop()
 
@@ -378,36 +71,34 @@ except Exception as e:
     show_spinner="Loading machine data...",
 )
 def load_machines():
-
     records = []
     offset = 0
     batch_size = 1000
 
-    while len(records) < 5000:
-
-        response = (
-            supabase
-            .table("machines")
-            .select("*")
-            .range(
-                offset,
-                offset + batch_size - 1,
+    try:
+        while len(records) < 5000:
+            response = (
+                supabase
+                .table("machines")
+                .select("*")
+                .range(
+                    offset,
+                    offset + batch_size - 1,
+                )
+                .execute()
             )
-            .execute()
-        )
 
-        batch = response.data or []
+            batch = response.data or []
+            records.extend(batch)
 
-        records.extend(batch)
+            if len(batch) < batch_size:
+                break
 
-        if len(batch) < batch_size:
-            break
+            offset += batch_size
+    except Exception:
+        return pd.DataFrame(records)
 
-        offset += batch_size
-
-    return pd.DataFrame(
-        records[:5000]
-    )
+    return pd.DataFrame(records[:5000])
 
 
 # ============================================================
@@ -415,15 +106,9 @@ def load_machines():
 # ============================================================
 
 try:
-
     machines = load_machines()
-
 except Exception as e:
-
-    st.error(
-        "Unable to load machine data from Supabase."
-    )
-
+    st.error("Unable to load machine data from Supabase.")
     st.code(str(e))
     st.stop()
 
@@ -432,193 +117,38 @@ except Exception as e:
 # COLUMN HELPERS
 # ============================================================
 
-def find_column(
-    df,
-    candidates,
-):
-
-    lower_map = {
-        str(column).lower(): column
-        for column in df.columns
-    }
-
+def find_column(df, candidates):
+    if df is None or df.empty:
+        return None
+    lower_map = {str(c).lower().strip(): c for c in df.columns}
     for candidate in candidates:
-
-        if candidate.lower() in lower_map:
-
-            return lower_map[
-                candidate.lower()
-            ]
-
+        candidate_lower = candidate.lower().strip()
+        if candidate_lower in lower_map:
+            return lower_map[candidate_lower]
     return None
-
-
-machine_id_column = find_column(
-    machines,
-    [
-        "machine_id",
-        "machineId",
-        "id",
-    ],
-)
-
-model_column = find_column(
-    machines,
-    [
-        "model",
-        "machine_type",
-        "type",
-    ],
-)
-
-status_column = find_column(
-    machines,
-    [
-        "status",
-        "machine_status",
-    ],
-)
-
-uptime_column = find_column(
-    machines,
-    [
-        "uptime",
-        "uptime_percent",
-        "uptime_percentage",
-        "average_uptime",
-        "avg_uptime",
-    ],
-)
 
 
 # ============================================================
 # SIDEBAR
 # ============================================================
 
-with st.sidebar:
-
-    brand_col1, brand_col2 = st.columns(
-        [1, 3],
-        gap="small",
-    )
-
-    with brand_col1:
-
-        st.markdown(
-            """
-            <div class="brand-icon">
-                S
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with brand_col2:
-
-        st.markdown(
-            """
-            <div class="brand-title">
-                SmartFactory
-            </div>
-
-            <div class="brand-subtitle">
-                Analytics Platform
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.write("")
-
-    st.caption("NAVIGATION")
-
-    st.page_link(
-        "app.py",
-        label="Dashboard",
-        icon=":material/dashboard:",
-    )
-
-    st.page_link(
-        "pages/machines.py",
-        label="Machines",
-        icon=":material/precision_manufacturing:",
-    )
-
-    st.page_link(
-        "pages/maintenance.py",
-        label="Maintenance",
-        icon=":material/build:",
-    )
-
-    if os.path.exists(
-        os.path.join(
-            "pages",
-            "defects.py",
-        )
-    ):
-
-        st.page_link(
-            "pages/defects.py",
-            label="Defects",
-            icon=":material/warning:",
-        )
-
-    if os.path.exists(
-        os.path.join(
-            "pages",
-            "reports.py",
-        )
-    ):
-
-        st.page_link(
-            "pages/reports.py",
-            label="Reports",
-            icon=":material/bar_chart:",
-        )
-
-    if os.path.exists(
-        os.path.join(
-            "pages",
-            "upload_data.py",
-        )
-    ):
-
-        st.page_link(
-            "pages/upload_data.py",
-            label="Upload Data",
-            icon=":material/upload:",
-        )
-
-    st.divider()
-
-    st.markdown(
-        "**Admin User**"
-    )
-
-    st.caption(
-        "admin@smartfactory.io"
-    )
+render_sidebar(current_page="machines")
 
 
 # ============================================================
 # PAGE HEADER
 # ============================================================
 
-header_left, header_right = st.columns(
-    [8, 1]
-)
+header_left, header_right = st.columns([8, 1])
 
 with header_left:
-
     st.title("Machines")
-
     st.caption(
-        "View and filter machines stored "
-        "in the SmartFactory database."
+        "Explore factory asset registry, operational statuses, "
+        "and equipment specifications across production lines."
     )
 
 with header_right:
-
     st.markdown(
         f"""
         <div class="page-date">
@@ -630,334 +160,195 @@ with header_right:
 
 
 # ============================================================
-# EMPTY DATA CHECK
+# EMPTY DATABASE CHECK
 # ============================================================
 
 if machines.empty:
-
-    st.info(
-        "No machine records found in Supabase."
-    )
-
+    st.info("No machine records found in Supabase.")
     st.stop()
 
 
 # ============================================================
-# SEARCH + MODEL FILTER
+# IDENTIFY KEY COLUMNS
 # ============================================================
 
-search_col, model_col = (
-    st.columns([2, 1])
+machine_id_col = find_column(
+    machines,
+    ["machine_id", "machineid", "id", "machine_code"],
+)
+
+status_col = find_column(
+    machines,
+    ["status", "operational_status", "state", "machine_status"],
+)
+
+model_col = find_column(
+    machines,
+    ["model", "machine_type", "type", "equipment_type"],
+)
+
+age_col = find_column(
+    machines,
+    ["age_years", "age", "years_in_service", "machine_age"],
 )
 
 
-with search_col:
+# ============================================================
+# FILTERS & SEARCH
+# ============================================================
 
-    search = st.text_input(
-        "Search",
-        placeholder=(
-            "Search machine ID, model "
-            "or other information..."
-        ),
-    )
+st.subheader("Filter & Search")
 
+filter_col1, filter_col2, filter_col3 = st.columns(3)
 
-with model_col:
+with filter_col1:
+    search_query = st.text_input(
+        "Search Machine ID / Model",
+        placeholder="e.g. M01 or CNC...",
+    ).strip()
 
-    if model_column:
-
-        model_options = (
-            machines[
-                model_column
-            ]
+with filter_col2:
+    if status_col:
+        status_values = (
+            machines[status_col]
             .dropna()
             .astype(str)
             .unique()
             .tolist()
         )
-
-        model_options = (
-            ["All"]
-            + sorted(model_options)
+        status_choices = ["All Statuses"] + sorted(status_values)
+        selected_status = st.selectbox(
+            "Status",
+            status_choices,
         )
-
     else:
+        selected_status = "All Statuses"
 
-        model_options = [
-            "All"
-        ]
-
-    selected_model = st.selectbox(
-        "Model / Type",
-        model_options,
-    )
-
-
-# ============================================================
-# FILTER DATA
-# ============================================================
-
-filtered_machines = (
-    machines.copy()
-)
-
-
-# ------------------------------------------------------------
-# SEARCH
-# ------------------------------------------------------------
-
-if search:
-
-    search_text = (
-        search
-        .strip()
-        .lower()
-    )
-
-    if search_text:
-
-        mask = (
-            filtered_machines
+with filter_col3:
+    if model_col:
+        model_values = (
+            machines[model_col]
+            .dropna()
             .astype(str)
-            .apply(
-                lambda column:
-                column.str.lower()
-                .str.contains(
-                    search_text,
-                    na=False,
-                )
-            )
-            .any(axis=1)
+            .unique()
+            .tolist()
         )
-
-        filtered_machines = (
-            filtered_machines[
-                mask
-            ]
+        model_choices = ["All Models"] + sorted(model_values)
+        selected_model = st.selectbox(
+            "Model",
+            model_choices,
         )
+    else:
+        selected_model = "All Models"
 
 
-# ------------------------------------------------------------
-# MODEL
-# ------------------------------------------------------------
+# ============================================================
+# APPLY FILTERS
+# ============================================================
 
-if (
-    selected_model != "All"
-    and model_column
-):
+filtered_df = machines.copy()
 
-    filtered_machines = (
-        filtered_machines[
-            filtered_machines[
-                model_column
-            ]
+if search_query:
+    search_conditions = pd.Series([False] * len(filtered_df), index=filtered_df.index)
+    if machine_id_col:
+        search_conditions |= (
+            filtered_df[machine_id_col]
             .astype(str)
-            == selected_model
-        ]
-    )
+            .str.contains(search_query, case=False, na=False)
+        )
+    if model_col:
+        search_conditions |= (
+            filtered_df[model_col]
+            .astype(str)
+            .str.contains(search_query, case=False, na=False)
+        )
+    filtered_df = filtered_df[search_conditions]
+
+if status_col and selected_status != "All Statuses":
+    filtered_df = filtered_df[
+        filtered_df[status_col].astype(str) == selected_status
+    ]
+
+if model_col and selected_model != "All Models":
+    filtered_df = filtered_df[
+        filtered_df[model_col].astype(str) == selected_model
+    ]
 
 
 # ============================================================
-# OVERVIEW METRICS
+# SUMMARY METRICS
 # ============================================================
 
-st.subheader(
-    "Overview"
-)
+st.subheader("Overview")
 
+total_count = len(filtered_df)
 
-machine_count = len(
-    filtered_machines
-)
-
-database_count = len(
-    machines
-)
-
-
-if status_column:
-
-    status_values = (
-        filtered_machines[
-            status_column
-        ]
-        .fillna("")
-        .astype(str)
-        .str.lower()
-    )
-
-    running_count = int(
-        status_values.isin(
-            [
-                "running",
-                "active",
-                "online",
-            ]
+if status_col:
+    operational_count = int(
+        (
+            filtered_df[status_col]
+            .astype(str)
+            .str.lower()
+            == "operational"
         ).sum()
     )
-
+    maintenance_count = int(
+        (
+            filtered_df[status_col]
+            .astype(str)
+            .str.lower()
+            .str.contains("maint|repair|offline", regex=True)
+        ).sum()
+    )
 else:
+    operational_count = total_count
+    maintenance_count = 0
 
-    running_count = 0
+metric_col1, metric_col2, metric_col3 = st.columns(3)
 
-
-kpi1, kpi2, kpi3 = (
-    st.columns(3)
-)
-
-
-with kpi1:
-
+with metric_col1:
     st.metric(
-        "Machines",
-        f"{machine_count:,}",
+        "Total Machines",
+        f"{total_count:,}",
     )
 
-
-with kpi2:
-
+with metric_col2:
     st.metric(
-        "Records in Database",
-        f"{database_count:,}",
+        "Operational",
+        f"{operational_count:,}",
     )
 
-
-with kpi3:
-
+with metric_col3:
     st.metric(
-        "Running Machines",
-        f"{running_count:,}",
+        "Under Maintenance / Offline",
+        f"{maintenance_count:,}",
     )
 
 
 # ============================================================
-# RESULT COUNT
+# MACHINE DIRECTORY TABLE
 # ============================================================
+
+st.subheader("Machine Registry")
 
 st.caption(
-    f"Showing {len(filtered_machines):,} "
-    f"of {len(machines):,} machines"
+    f"Showing {len(filtered_df):,} of {len(machines):,} total machines"
 )
-
-
-# ============================================================
-# MACHINE RECORDS
-# ============================================================
-
-st.subheader(
-    "Machine Records"
-)
-
-st.caption(
-    "Live data from the Supabase machines table."
-)
-
-
-# ============================================================
-# BUILD DISPLAY TABLE SAFELY
-# ============================================================
-
-display_data = pd.DataFrame(
-    index=filtered_machines.index
-)
-
-
-# Machine ID
-
-if machine_id_column:
-
-    display_data[
-        "Machine ID"
-    ] = filtered_machines[
-        machine_id_column
-    ].astype(str)
-
-else:
-
-    display_data[
-        "Machine ID"
-    ] = filtered_machines.index.astype(str)
-
-
-# Model
-
-if model_column:
-
-    display_data[
-        "Model"
-    ] = filtered_machines[
-        model_column
-    ].fillna(
-        "Unknown"
-    ).astype(str)
-
-else:
-
-    display_data[
-        "Model"
-    ] = "Unknown"
-
-
-# Status
-
-if status_column:
-
-    display_data[
-        "Status"
-    ] = filtered_machines[
-        status_column
-    ].fillna(
-        "Unknown"
-    ).astype(str)
-
-else:
-
-    display_data[
-        "Status"
-    ] = "Unknown"
-
-
-# Uptime if available
-
-if uptime_column:
-
-    uptime_values = pd.to_numeric(
-        filtered_machines[
-            uptime_column
-        ],
-        errors="coerce",
-    )
-
-    display_data[
-        "Uptime %"
-    ] = uptime_values.round(1)
-
-
-# ============================================================
-# DISPLAY
-# ============================================================
 
 st.dataframe(
-    display_data,
+    filtered_df,
     use_container_width=True,
     hide_index=True,
-    height=500,
+    height=450,
 )
 
 
 # ============================================================
-# DATABASE INFORMATION
+# DATABASE INFO
 # ============================================================
 
-with st.expander(
-    "Database information"
-):
-
-    st.write(
-        "Columns available in the Supabase "
-        "machines table:"
-    )
-
-    st.write(
-        machines.columns.tolist()
-    )
+with st.expander("Database information"):
+    st.write("Data sources:")
+    st.code("machines")
+    st.write("Columns:")
+    st.write(machines.columns.tolist() if not machines.empty else [])
