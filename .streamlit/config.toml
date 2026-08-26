@@ -1,10 +1,36 @@
 [client]
 showSidebarNavigation = false
 
-[theme]
+
+[theme.light]
 base = "light"
 primaryColor = "#2563eb"
 backgroundColor = "#f8f9fb"
 secondaryBackgroundColor = "#ffffff"
 textColor = "#101828"
-font = "sans serif"
+font = "sans-serif"
+
+
+[theme.light.sidebar]
+primaryColor = "#2563eb"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8f9fb"
+textColor = "#101828"
+font = "sans-serif"
+
+
+[theme.dark]
+base = "dark"
+primaryColor = "#60a5fa"
+backgroundColor = "#0f172a"
+secondaryBackgroundColor = "#1e293b"
+textColor = "#f1f5f9"
+font = "sans-serif"
+
+
+[theme.dark.sidebar]
+primaryColor = "#60a5fa"
+backgroundColor = "#111827"
+secondaryBackgroundColor = "#1f2937"
+textColor = "#f1f5f9"
+font = "sans-serif"
