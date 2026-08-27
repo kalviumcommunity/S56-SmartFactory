@@ -1,4 +1,4 @@
-# SmartFactory — Intelligent Manufacturing Analytics Platform
+# SmartFactory - Intelligent Manufacturing Analytics Platform
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://s56-smartfactory.streamlit.app/)
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
@@ -9,7 +9,7 @@
 
 ---
 
-## 🏭 Overview
+##  Overview
 
 **SmartFactory** is a unified industrial analytics platform that helps manufacturing companies detect early signs of equipment failure and production quality degradation. By correlating machine telemetry sensor readings, maintenance service histories, and defect logs into a single real-time dashboard, operations teams can transition from reactive repairs to predictive maintenance.
 
@@ -24,7 +24,7 @@ In typical manufacturing facilities:
 
 ---
 
-## 🎯 Objectives & Key Solutions
+##  Objectives & Key Solutions
 
 - **Unified Data Pipeline**: Consolidate disparate manufacturing datasets into a normalized Supabase PostgreSQL database.
 - **Root Cause Analysis**: Correlate machine health and telemetry anomalies with quality defect rates.
@@ -33,21 +33,21 @@ In typical manufacturing facilities:
 
 ---
 
-## 🚀 Key Features & Modules
+##  Key Features & Modules
 
 | Module | Description |
 | :--- | :--- |
-| **📊 Operational Dashboard** | High-level overview of factory floor KPIs, overall availability, active machinery status, defect distribution, and maintenance load. |
-| **⚙️ Machines Intelligence** | Machine-specific health profiles, operational status, sensor telemetry history, and age metrics. |
-| **🛠️ Maintenance Logs** | Tracking of preventive scheduled maintenance vs. corrective emergency repairs with component-level breakdown. |
-| **⚠️ Defect Analytics** | Production quality tracking, defect rate trends, defective unit counts, and material correlation. |
-| **📑 Comprehensive Reports** | Cross-domain analytics, early warning equipment attention lists, and filtered data table downloads. |
-| **📤 Data Upload & Validation** | Built-in CSV validator and upload portal that automatically normalizes and inserts records into Supabase. |
-| **🎨 Settings & Preferences** | Light and Dark mode toggle, configurable risk threshold sliders, and real-time Supabase connection diagnostics. |
+| **Operational Dashboard** | High-level overview of factory floor KPIs, overall availability, active machinery status, defect distribution, and maintenance load. |
+| **Machines Intelligence** | Machine-specific health profiles, operational status, sensor telemetry history, and age metrics. |
+| **Maintenance Logs** | Tracking of preventive scheduled maintenance vs. corrective emergency repairs with component-level breakdown. |
+| **Defect Analytics** | Production quality tracking, defect rate trends, defective unit counts, and material correlation. |
+| **Comprehensive Reports** | Cross-domain analytics, early warning equipment attention lists, and filtered data table downloads. |
+| **Data Upload & Validation** | Built-in CSV validator and upload portal that automatically normalizes and inserts records into Supabase. |
+| **Settings & Preferences** | Light and Dark mode toggle, configurable risk threshold sliders, and real-time Supabase connection diagnostics. |
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 - **Frontend & App Framework**: Streamlit (Multi-page architecture with custom responsive CSS design tokens)
 - **Data Manipulation & Analytics**: Pandas, NumPy
@@ -58,7 +58,7 @@ In typical manufacturing facilities:
 
 ---
 
-## 🗄️ Database Schema
+##  Database Schema
 
 The database is hosted on Supabase (PostgreSQL) and comprises four core relational tables:
 
@@ -130,7 +130,7 @@ S56-SmartFactory/
 
 ---
 
-## 💻 Local Setup & Installation
+##  Local Setup & Installation
 
 ### 1. Clone the Repository
 ```bash
@@ -175,7 +175,7 @@ Open your browser and navigate to `http://localhost:8501`.
 
 ---
 
-## 👥 Team Members
+##  Team Members
 
 - **Janhavi Hivarekar**
 - **Pranjal Gosavi**
