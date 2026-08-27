@@ -46,7 +46,7 @@ st.markdown(
         width: 38px !important;
         height: 38px !important;
         border-radius: 9px !important;
-        background: var(--st-primary-color) !important;
+        background: var(--primary-accent, #3b82f6) !important;
         color: #ffffff !important;
         display: flex !important;
         align-items: center !important;
@@ -64,12 +64,12 @@ st.markdown(
     .sf-page-header {
         padding-top: 4px;
         padding-bottom: 18px;
-        border-bottom: 1px solid var(--st-border-color);
+        border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
         margin-bottom: 26px;
     }
 
     .sf-page-header h1 {
-        color: var(--st-text-color);
+        color: var(--text-primary, inherit);
         font-size: 30px;
         font-weight: 700;
         margin: 0 0 8px 0;
@@ -77,9 +77,9 @@ st.markdown(
     }
 
     .sf-page-header p {
-        color: var(--st-text-color);
-        opacity: 0.65;
-        font-size: 13px;
+        color: var(--text-secondary, inherit);
+        opacity: 0.75;
+        font-size: 13.5px;
         margin: 0;
     }
 
@@ -89,27 +89,27 @@ st.markdown(
        ======================================================== */
 
     .sf-upload-card {
-        border: 1px solid var(--st-border-color);
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
         border-radius: 14px;
         padding: 20px;
         min-height: 145px;
-        background: var(--st-secondary-background-color);
+        background: var(--bg-surface, rgba(255, 255, 255, 0.05));
         margin-bottom: 12px;
         box-sizing: border-box;
     }
 
     .sf-upload-card h3 {
-        margin: 10px 0 8px 0;
-        color: var(--st-text-color);
+        margin: 12px 0 8px 0;
+        color: var(--text-primary, inherit);
         font-size: 17px;
         font-weight: 700;
     }
 
     .sf-upload-card p {
-        color: var(--st-text-color);
-        opacity: 0.65;
-        font-size: 12px;
-        line-height: 1.6;
+        color: var(--text-secondary, inherit);
+        opacity: 0.75;
+        font-size: 13px;
+        line-height: 1.5;
         margin: 0;
     }
 
@@ -117,12 +117,8 @@ st.markdown(
         width: 42px;
         height: 42px;
         border-radius: 10px;
-        background: color-mix(
-            in srgb,
-            var(--st-primary-color) 12%,
-            var(--st-secondary-background-color)
-        );
-        color: var(--st-primary-color);
+        background: var(--primary-light, rgba(59, 130, 246, 0.15));
+        color: var(--primary-accent, #3b82f6);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -136,8 +132,8 @@ st.markdown(
        ======================================================== */
 
     .sf-file-info {
-        color: var(--st-text-color);
-        opacity: 0.65;
+        color: var(--text-secondary, inherit);
+        opacity: 0.7;
         font-size: 12px;
         margin-top: 5px;
     }
@@ -148,7 +144,7 @@ st.markdown(
        ======================================================== */
 
     .sf-section-title {
-        color: var(--st-text-color);
+        color: var(--text-primary, inherit);
         font-size: 22px;
         font-weight: 700;
         margin-top: 12px;
@@ -156,8 +152,8 @@ st.markdown(
     }
 
     .sf-section-caption {
-        color: var(--st-text-color);
-        opacity: 0.62;
+        color: var(--text-secondary, inherit);
+        opacity: 0.7;
         font-size: 13px;
         margin-bottom: 18px;
     }
@@ -168,23 +164,23 @@ st.markdown(
        ======================================================== */
 
     .sf-history-card {
-        border: 1px solid var(--st-border-color);
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
         border-radius: 12px;
         padding: 14px 16px;
-        background: var(--st-secondary-background-color);
+        background: var(--bg-surface, rgba(255, 255, 255, 0.05));
         margin-bottom: 10px;
     }
 
     .sf-history-title {
-        color: var(--st-text-color);
+        color: var(--text-primary, inherit);
         font-size: 14px;
         font-weight: 600;
         margin-bottom: 4px;
     }
 
     .sf-history-meta {
-        color: var(--st-text-color);
-        opacity: 0.6;
+        color: var(--text-secondary, inherit);
+        opacity: 0.7;
         font-size: 12px;
     }
 
@@ -194,24 +190,29 @@ st.markdown(
        ======================================================== */
 
     .sf-format-box {
-        border: 1px solid var(--st-border-color);
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
         border-radius: 12px;
         padding: 18px;
-        background: var(--st-secondary-background-color);
+        background: var(--bg-surface, rgba(255, 255, 255, 0.05));
     }
 
     .sf-format-box h4 {
-        color: var(--st-text-color);
-        margin: 0 0 12px 0;
+        color: var(--text-primary, inherit);
+        margin: 12px 0 8px 0;
         font-size: 15px;
+        font-weight: 600;
+    }
+
+    .sf-format-box h4:first-child {
+        margin-top: 0;
     }
 
     .sf-format-box p,
     .sf-format-box li {
-        color: var(--st-text-color);
-        opacity: 0.72;
-        font-size: 12px;
-        line-height: 1.7;
+        color: var(--text-secondary, inherit);
+        opacity: 0.8;
+        font-size: 13px;
+        line-height: 1.6;
     }
 
 
@@ -224,8 +225,8 @@ st.markdown(
     }
 
     div[data-testid="stFileUploader"] section {
-        background: var(--st-secondary-background-color) !important;
-        border: 1px dashed var(--st-border-color) !important;
+        background: var(--bg-surface, rgba(255, 255, 255, 0.05)) !important;
+        border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.2)) !important;
         border-radius: 10px !important;
     }
 
@@ -235,7 +236,7 @@ st.markdown(
        ======================================================== */
 
     .sf-preview-title {
-        color: var(--st-text-color);
+        color: var(--text-primary, inherit);
         font-size: 15px;
         font-weight: 650;
         margin-top: 12px;
@@ -937,15 +938,10 @@ def process_upload(
 # ============================================================
 
 st.markdown(
-    """
-    <div class="sf-page-header">
-        <h1>Upload Manufacturing Data</h1>
-        <p>
-            Upload CSV files using the supported formats below.
-            Files are validated before being added to Supabase.
-        </p>
-    </div>
-    """,
+    """<div class="sf-page-header">
+<h1>Upload Manufacturing Data</h1>
+<p>Upload CSV files using the supported formats below. Files are validated before being added to Supabase.</p>
+</div>""",
     unsafe_allow_html=True,
 )
 
@@ -969,19 +965,11 @@ with card_columns[0]:
     config = UPLOAD_CONFIG["uptime"]
 
     st.markdown(
-        f"""
-        <div class="sf-upload-card">
-            <div class="sf-upload-icon">
-                {config["icon"]}
-            </div>
-
-            <h3>{config["title"]}</h3>
-
-            <p>
-                {config["description"]}
-            </p>
-        </div>
-        """,
+        f"""<div class="sf-upload-card">
+<div class="sf-upload-icon">{config["icon"]}</div>
+<h3>{config["title"]}</h3>
+<p>{config["description"]}</p>
+</div>""",
         unsafe_allow_html=True,
     )
 
@@ -1018,19 +1006,11 @@ with card_columns[1]:
     config = UPLOAD_CONFIG["maintenance"]
 
     st.markdown(
-        f"""
-        <div class="sf-upload-card">
-            <div class="sf-upload-icon">
-                {config["icon"]}
-            </div>
-
-            <h3>{config["title"]}</h3>
-
-            <p>
-                {config["description"]}
-            </p>
-        </div>
-        """,
+        f"""<div class="sf-upload-card">
+<div class="sf-upload-icon">{config["icon"]}</div>
+<h3>{config["title"]}</h3>
+<p>{config["description"]}</p>
+</div>""",
         unsafe_allow_html=True,
     )
 
@@ -1067,19 +1047,11 @@ with card_columns[2]:
     config = UPLOAD_CONFIG["defects"]
 
     st.markdown(
-        f"""
-        <div class="sf-upload-card">
-            <div class="sf-upload-icon">
-                {config["icon"]}
-            </div>
-
-            <h3>{config["title"]}</h3>
-
-            <p>
-                {config["description"]}
-            </p>
-        </div>
-        """,
+        f"""<div class="sf-upload-card">
+<div class="sf-upload-icon">{config["icon"]}</div>
+<h3>{config["title"]}</h3>
+<p>{config["description"]}</p>
+</div>""",
         unsafe_allow_html=True,
     )
 
@@ -1120,16 +1092,12 @@ st.divider()
 # ============================================================
 
 st.markdown(
-    '<div class="sf-section-title">'
-    "Upload History"
-    "</div>",
+    '<div class="sf-section-title">Upload History</div>',
     unsafe_allow_html=True,
 )
 
 st.markdown(
-    '<div class="sf-section-caption">'
-    "Files uploaded during this Streamlit session."
-    "</div>",
+    '<div class="sf-section-caption">Files uploaded during this Streamlit session.</div>',
     unsafe_allow_html=True,
 )
 
@@ -1145,25 +1113,10 @@ else:
     for item in st.session_state.upload_history:
 
         st.markdown(
-            f"""
-            <div class="sf-history-card">
-
-                <div class="sf-history-title">
-                    {item["file"]}
-                </div>
-
-                <div class="sf-history-meta">
-                    {item["type"]}
-                    &nbsp; • &nbsp;
-                    {item["records"]:,} records
-                    &nbsp; • &nbsp;
-                    {item["table"]}
-                    &nbsp; • &nbsp;
-                    {item["time"]}
-                </div>
-
-            </div>
-            """,
+            f"""<div class="sf-history-card">
+<div class="sf-history-title">{item["file"]}</div>
+<div class="sf-history-meta">{item["type"]} &nbsp; • &nbsp; {item["records"]:,} records &nbsp; • &nbsp; {item["table"]} &nbsp; • &nbsp; {item["time"]}</div>
+</div>""",
             unsafe_allow_html=True,
         )
 
@@ -1172,72 +1125,44 @@ else:
 # SUPPORTED FORMATS
 # ============================================================
 
-st.markdown(
-    "",
-    unsafe_allow_html=True,
-)
-
 with st.expander(
     "Supported CSV formats"
 ):
 
     st.markdown(
-        """
-        <div class="sf-format-box">
-
-            <h4>Machine Uptime CSV</h4>
-
-            <p>
-                Required columns:
-            </p>
-
-            <ul>
-                <li>timestamp</li>
-                <li>machine_id</li>
-                <li>voltage</li>
-                <li>rotation_speed</li>
-                <li>pressure</li>
-                <li>vibration</li>
-                <li>is_running</li>
-            </ul>
-
-            <h4>Maintenance Records CSV</h4>
-
-            <p>
-                Required columns:
-            </p>
-
-            <ul>
-                <li>timestamp</li>
-                <li>machine_id</li>
-                <li>component</li>
-                <li>log_type</li>
-                <li>next_due_date</li>
-            </ul>
-
-            <h4>Defect Records CSV</h4>
-
-            <p>
-                Required columns:
-            </p>
-
-            <ul>
-                <li>timestamp</li>
-                <li>machine_id</li>
-                <li>material_name</li>
-                <li>production_output</li>
-                <li>defect_rate</li>
-                <li>defective_units</li>
-                <li>energy_consumed</li>
-            </ul>
-
-            <p>
-                CSV files are validated before they are inserted
-                into Supabase. Machine IDs and timestamps are
-                normalized automatically.
-            </p>
-
-        </div>
-        """,
+        """<div class="sf-format-box">
+<h4>Machine Uptime CSV</h4>
+<p>Required columns:</p>
+<ul>
+<li>timestamp</li>
+<li>machine_id</li>
+<li>voltage</li>
+<li>rotation_speed</li>
+<li>pressure</li>
+<li>vibration</li>
+<li>is_running</li>
+</ul>
+<h4>Maintenance Records CSV</h4>
+<p>Required columns:</p>
+<ul>
+<li>timestamp</li>
+<li>machine_id</li>
+<li>component</li>
+<li>log_type</li>
+<li>next_due_date</li>
+</ul>
+<h4>Defect Records CSV</h4>
+<p>Required columns:</p>
+<ul>
+<li>timestamp</li>
+<li>machine_id</li>
+<li>material_name</li>
+<li>production_output</li>
+<li>defect_rate</li>
+<li>defective_units</li>
+<li>energy_consumed</li>
+</ul>
+<p>CSV files are validated before they are inserted into Supabase. Machine IDs and timestamps are normalized automatically.</p>
+</div>""",
         unsafe_allow_html=True,
     )
