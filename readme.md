@@ -134,7 +134,7 @@ S56-SmartFactory/
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/pranjal-2507/S56-SmartFactory.git
+git clone https://github.com/kalviumcommunity/S56-SmartFactory.git
 cd S56-SmartFactory
 ```
 
